@@ -7,10 +7,10 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "target": "es2023",
-    "types": ["node"],
+    "types": ["node", "jest"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -36,7 +36,6 @@
     // Recommended Options
     "strict": true,
     "esModuleInterop": true,
-    "jsx": "react-jsx",
     "verbatimModuleSyntax": false,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
