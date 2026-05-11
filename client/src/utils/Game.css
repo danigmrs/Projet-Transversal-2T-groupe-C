@@ -1,0 +1,132 @@
+/* corps  */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #09090b;
+  color: white;
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.game-card {
+  width: 100%;
+  max-width: 700px;
+  background: #18181b;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/*  Header  */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: #a1a1aa;
+}
+
+/*  Score actuel  */
+.last-score-card {
+  background: #27272a;
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.score-label {
+  text-transform: uppercase;
+  font-size: 14px;
+  color: #a1a1aa;
+  margin-bottom: 10px;
+}
+
+.score-value {
+  font-size: 64px;
+  font-weight: bold;
+  color: #22c55e;
+}
+
+.score-unit {
+  font-size: 24px;
+  color: #d4d4d8;
+}
+
+/* Top scores  */
+.top-scores-card {
+  background: #27272a;
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.top-title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.scores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #3f3f46;
+  padding: 14px 18px;
+  border-radius: 14px;
+}
+
+.rank {
+  color: #d4d4d8;
+  font-weight: bold;
+}
+
+.score {
+  color: #22c55e;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* Bouton */
+.button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.start-button {
+  background: #22c55e;
+  color: black;
+  border: none;
+  padding: 16px 42px;
+  font-size: 22px;
+  font-weight: bold;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.start-button:hover {
+  transform: scale(1.05);
+  background: #4ade80;
+}
+
+.start-button:active {
+  transform: scale(0.98);
+}
