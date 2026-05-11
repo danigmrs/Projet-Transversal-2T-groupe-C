@@ -51,7 +51,7 @@ export default function Inscription() {
   };
 
   const goToHome = () => {
-    navigate("/Home");
+    navigate("/");
   };
 
   return (
