@@ -9,7 +9,7 @@ export function authMiddleware(
   next: NextFunction
 ) {
   const token = req.cookies?.token;
-
+    console.log("COOKIES RECEIVED:", req.cookies);
   if (!token) {
     return res.status(401).json({
       message: "Unauthorized: No token",

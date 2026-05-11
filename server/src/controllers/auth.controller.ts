@@ -19,17 +19,17 @@ export default class AuthController {
     try {
       const { username, password } = req.body;
 
-      const result = await AuthService.login(username, password) as {
-        token: string;
-        user: any;
-      };
+      const result = await AuthService.login(username, password);
 
-      // 🍪 COOKIE HTTP-ONLY (IMPORTANT)
+      console.log("LOGIN RESULT =", result);
+
+      const { token, user } = result as any;
+
       res.cookie("token", token, {
         httpOnly: true,
-        secure: false, // true en production (HTTPS)
+        secure: false,
         sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000, // 1 jour
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
       return res.json({
@@ -38,6 +38,7 @@ export default class AuthController {
       });
 
     } catch (err: any) {
+      console.error("LOGIN ERROR =", err);
       res.status(401).json({ error: err.message });
     }
   }

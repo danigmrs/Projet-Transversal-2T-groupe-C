@@ -6,51 +6,46 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 export class AuthService {
 
-  static register(username: string, password: string) {
-    return new Promise((resolve, reject) => {
+  static async register(username: string, password: string) {
+    const existing = mockDb.findUserByUsername(username);
 
-      const existing = mockDb.findUserByUsername(username);
+    if (existing) {
+      throw new Error("User already exists");
+    }
 
-      if (existing) {
-        return reject("User already exists");
-      }
+    const hashedPassword = bcrypt.hashSync(password, 10);
 
-      const hashedPassword = bcrypt.hashSync(password, 10);
+    const user = mockDb.insertUser(username, hashedPassword);
 
-      const user = mockDb.insertUser(username, hashedPassword);
-
-      resolve(user);
-    });
+    return user;
   }
 
-    static login(username: string, password: string) {
-    return new Promise((resolve, reject) => {
+  static async login(username: string, password: string) {
 
-      const user = mockDb.findUserByUsername(username);
+    const user = mockDb.findUserByUsername(username);
 
-      if (!user) {
-        return reject("User not found");
-      }
+    if (!user) {
+      throw new Error("User not found");
+    }
 
-      const isValid = bcrypt.compareSync(password, user.password);
+    const isValid = bcrypt.compareSync(password, user.password);
 
-      if (!isValid) {
-        return reject("Invalid password");
-      }
+    if (!isValid) {
+      throw new Error("Invalid password");
+    }
 
-      const token = jwt.sign(
-        { id: user.id, username: user.username },
-        JWT_SECRET,
-        { expiresIn: "1h" }
-      );
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
-      resolve({
-        token,
-        user: {
-          id: user.id,
-          username: user.username,
-        },
-      });
-    });
+    return {
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+      },
+    };
   }
 }
