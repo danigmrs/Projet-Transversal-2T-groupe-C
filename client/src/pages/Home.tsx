@@ -44,7 +44,7 @@ export default function Connexion() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        mail,
+        username: mail,
         password
       })
     });
