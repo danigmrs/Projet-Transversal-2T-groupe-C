@@ -69,7 +69,10 @@ export default function SimonGame() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ score: finalScore }),
+        body: JSON.stringify({
+          id_user: 1, // temporaire
+          score: finalScore
+        }),
       });
       fetchLeaderboard();
     } catch (_) {}
