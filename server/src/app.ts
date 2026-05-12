@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes";
-import UserRoutes from "./routes/user.routes";
+import UserRoutes from "./routes/user.routes.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./docs/swagger";
 import cookieParser from "cookie-parser";
@@ -14,7 +14,7 @@ app.use(
     credentials: true,
   })
 );
-
+//test pipelineCI/CD
 app.use(cookieParser());
 app.use(express.json());
 
