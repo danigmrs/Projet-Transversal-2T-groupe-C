@@ -5,10 +5,9 @@ dotenv.config();
 
 const isTest = process.env.NODE_ENV === "test";
 
-const sequelize = new Sequelize('database', 'username', 'password', {
-  host: 'localhost',
-  storage: isTest ? ":memory:" :"./database.sqlite",
+const sequelize = new Sequelize({
   dialect: "sqlite",
+  storage: isTest ? ":memory:" : "./database.sqlite",
   logging: false,
 });
 
