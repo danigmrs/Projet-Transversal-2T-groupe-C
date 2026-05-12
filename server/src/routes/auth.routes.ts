@@ -8,14 +8,14 @@ const router = Router();
  * @openapi
  * tags:
  *   name: Auth
- *   description: Authentication API
+ *   description: API d'authentification
  */
 
 /**
  * @openapi
  * /auth/register:
  *   post:
- *     summary: Register a new user
+ *     summary: Créer un nouvel utilisateur
  *     tags:
  *       - Auth
  *     requestBody:
@@ -36,9 +36,9 @@ const router = Router();
  *                 example: password123
  *     responses:
  *       201:
- *         description: User created successfully
+ *         description: Utilisateur créé avec succès
  *       400:
- *         description: User already exists
+ *         description: L'utilisateur existe déjà
  */
 router.post("/register", AuthController.register);
 
@@ -46,7 +46,7 @@ router.post("/register", AuthController.register);
  * @openapi
  * /auth/login:
  *   post:
- *     summary: Login user and set JWT cookie
+ *     summary: Connexion utilisateur et création du cookie JWT
  *     tags:
  *       - Auth
  *     requestBody:
@@ -67,9 +67,9 @@ router.post("/register", AuthController.register);
  *                 example: password123
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Connexion réussie
  *       401:
- *         description: Invalid credentials
+ *         description: Identifiants invalides
  */
 router.post("/login", AuthController.login);
 
@@ -77,16 +77,16 @@ router.post("/login", AuthController.login);
  * @openapi
  * /auth/me:
  *   get:
- *     summary: Get current authenticated user
+ *     summary: Récupérer l'utilisateur actuellement authentifié
  *     tags:
  *       - Auth
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Current authenticated user
+ *         description: Utilisateur authentifié actuel
  *       401:
- *         description: Unauthorized
+ *         description: Non autorisé
  */
 router.get("/me", authMiddleware, (req, res) => {
   res.json({
@@ -98,14 +98,14 @@ router.get("/me", authMiddleware, (req, res) => {
  * @openapi
  * /auth/logout:
  *   post:
- *     summary: Logout user and clear cookie
+ *     summary: Déconnexion utilisateur et suppression du cookie
  *     tags:
  *       - Auth
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Logout successful
+ *         description: Déconnexion réussie
  */
 router.post("/logout", authMiddleware, (req, res) => {
 

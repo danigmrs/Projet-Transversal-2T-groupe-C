@@ -8,14 +8,14 @@ const router = Router();
  * @openapi
  * tags:
  *   name: Users
- *   description: User management API
+ *   description: API de gestion des utilisateurs
  */
 
 /**
  * @openapi
  * /users:
  *   post:
- *     summary: Create a new user
+ *     summary: Créer un nouvel utilisateur
  *     tags:
  *       - Users
  *     requestBody:
@@ -44,9 +44,9 @@ const router = Router();
  *                 example: password123
  *     responses:
  *       201:
- *         description: User created successfully
+ *         description: Utilisateur créé avec succès
  *       400:
- *         description: Missing fields
+ *         description: Champs manquants
  */
 router.post("/", userController.createUser);
 
@@ -54,16 +54,16 @@ router.post("/", userController.createUser);
  * @openapi
  * /users:
  *   get:
- *     summary: Get all users
+ *     summary: Récupérer tous les utilisateurs
  *     tags:
  *       - Users
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: List of users
+ *         description: Liste des utilisateurs
  *       401:
- *         description: Unauthorized
+ *         description: Non autorisé
  */
 router.get("/", authMiddleware, userController.getUsers);
 
@@ -71,7 +71,7 @@ router.get("/", authMiddleware, userController.getUsers);
  * @openapi
  * /users/{id}:
  *   get:
- *     summary: Get user by ID
+ *     summary: Récupérer un utilisateur par ID
  *     tags:
  *       - Users
  *     security:
@@ -84,11 +84,11 @@ router.get("/", authMiddleware, userController.getUsers);
  *           type: integer
  *     responses:
  *       200:
- *         description: User found
+ *         description: Utilisateur trouvé
  *       404:
- *         description: User not found
+ *         description: Utilisateur non trouvé
  *       401:
- *         description: Unauthorized
+ *         description: Non autorisé
  */
 router.get("/:id", authMiddleware, userController.getUserById);
 
@@ -96,7 +96,7 @@ router.get("/:id", authMiddleware, userController.getUserById);
  * @openapi
  * /users/{id}:
  *   put:
- *     summary: Update a user
+ *     summary: Mettre à jour un utilisateur
  *     tags:
  *       - Users
  *     security:
@@ -122,11 +122,11 @@ router.get("/:id", authMiddleware, userController.getUserById);
  *                 type: string
  *     responses:
  *       200:
- *         description: User updated
+ *         description: Utilisateur mis à jour
  *       401:
- *         description: Unauthorized
+ *         description: Non autorisé
  *       404:
- *         description: User not found
+ *         description: Utilisateur non trouvé
  */
 router.put("/:id", authMiddleware, userController.updateUser);
 
@@ -134,7 +134,7 @@ router.put("/:id", authMiddleware, userController.updateUser);
  * @openapi
  * /users/{id}:
  *   delete:
- *     summary: Delete a user
+ *     summary: Supprimer un utilisateur
  *     tags:
  *       - Users
  *     security:
@@ -147,11 +147,11 @@ router.put("/:id", authMiddleware, userController.updateUser);
  *           type: integer
  *     responses:
  *       200:
- *         description: User deleted
+ *         description: Utilisateur supprimé
  *       401:
- *         description: Unauthorized
+ *         description: Non autorisé
  *       404:
- *         description: User not found
+ *         description: Utilisateur non trouvé
  */
 router.delete("/:id", authMiddleware, userController.deleteUser);
 
