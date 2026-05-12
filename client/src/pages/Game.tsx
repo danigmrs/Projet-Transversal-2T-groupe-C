@@ -228,6 +228,21 @@ export default function SimonGame() {
   const logSerial = (msg: string) => {
     setSerialLog(l => [...l.slice(-19), msg]);
   };
+
+  const handleLogout = async () => {
+  try {
+    await fetch("http://localhost:3000/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+
+    localStorage.removeItem("user");
+
+    window.location.href = "/";
+  } catch (error) {
+    console.error("Erreur logout :", error);
+  }
+};
  
   // ─── RENDER ───────────────────────────────────────────────────────────────
   return (
@@ -259,6 +274,9 @@ export default function SimonGame() {
             <div className="sg-scanline" />
             <h1 className="sg-title">SIMON</h1>
             <p className="sg-subtitle">MEMORY CHALLENGE</p>
+            <button className="sg-logout-btn" onClick={handleLogout}>
+              Déconnexion
+            </button>
           </header>
  
           {/* Score & Round */}
