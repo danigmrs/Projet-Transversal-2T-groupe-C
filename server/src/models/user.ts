@@ -3,7 +3,7 @@ import sequelize from "../config/database";
 import {
   UserAttributes,
   UserCreationAttributes,
-} from "../types/user";
+} from "../types/userType";
 
 
 
