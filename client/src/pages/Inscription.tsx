@@ -56,7 +56,7 @@ export default function Inscription() {
 
   return (
     <div className="inscription-container">
-      <h1>Quiz Culture Générale</h1>
+      <h1>Simon Groupe C</h1>
 
       <input
         type="text"
