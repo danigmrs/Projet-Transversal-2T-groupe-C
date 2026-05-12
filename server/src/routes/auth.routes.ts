@@ -1,6 +1,7 @@
 import { Router } from "express";
 import AuthController from "../controllers/auth.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
+import Utilisateur from "../models/user";
 
 const router = Router();
 
@@ -77,21 +78,45 @@ router.post("/login", AuthController.login);
  * @openapi
  * /auth/me:
  *   get:
- *     summary: Récupérer l'utilisateur actuellement authentifié
+ *     summary: Récupérer l'utilisateur actuellement connecté
+ *     description: Retourne les informations complètes de l'utilisateur authentifié via le token JWT (cookie).
  *     tags:
  *       - Auth
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Utilisateur authentifié actuel
+ *         description: Utilisateur authentifié récupéré avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id_user:
+ *                   type: integer
+ *                   example: 1
+ *                 nom_user:
+ *                   type: string
+ *                   example: Doe
+ *                 prenom_user:
+ *                   type: string
+ *                   example: John
+ *                 mail_user:
+ *                   type: string
+ *                   example: john@demo.com
  *       401:
- *         description: Non autorisé
+ *         description: Non autorisé - token manquant ou invalide
+ *       404:
+ *         description: Utilisateur non trouvé
  */
-router.get("/me", authMiddleware, (req, res) => {
-  res.json({
-    user: (req as any).user,
-  });
+router.get("/me", authMiddleware, async (req, res) => {
+  const user = await Utilisateur.findByPk((req as any).user.id);
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  res.json(user);
 });
 
 /**

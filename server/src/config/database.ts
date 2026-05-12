@@ -1,13 +1,9 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import { Sequelize } from "sequelize";
 
-const sequelize = new Sequelize('database', 'username', 'password', {
-  host: 'localhost',
+const sequelize = new Sequelize({
+  dialect: "sqlite",
   storage: "./database.sqlite",
-  dialect: "sqlite"});
-
-
+  logging: false,
+});
 
 export default sequelize;

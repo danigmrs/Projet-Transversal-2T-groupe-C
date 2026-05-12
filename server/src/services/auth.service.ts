@@ -2,12 +2,11 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import Utilisateur from "../models/user";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const JWT_SECRET = process.env.JWT_SECRET ?? "secret";
 
 export class AuthService {
 
   static async register(username: string, password: string) {
-    // on suppose que "username" = mail_user (important)
     const existing = await Utilisateur.findOne({
       where: { mail_user: username },
     });
@@ -16,16 +15,19 @@ export class AuthService {
       throw new Error("User already exists");
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await Utilisateur.create({
-      nom_user: "default",
-      prenom_user: "default",
+      nom_user: "inconnu",
+      prenom_user: "inconnu",
       mail_user: username,
       mdp_user: hashedPassword,
     });
 
-    return user;
+    return {
+      id: user.id_user,
+      mail: user.mail_user,
+    };
   }
 
   static async login(username: string, password: string) {
@@ -38,14 +40,17 @@ export class AuthService {
       throw new Error("User not found");
     }
 
-    const isValid = bcrypt.compareSync(password, user.mdp_user);
+    const isValid = await bcrypt.compare(password, user.mdp_user);
 
     if (!isValid) {
       throw new Error("Invalid password");
     }
 
     const token = jwt.sign(
-      { id: user.id_user, mail: user.mail_user },
+      {
+        id: user.id_user,
+        mail: user.mail_user,
+      },
       JWT_SECRET,
       { expiresIn: "1h" }
     );
