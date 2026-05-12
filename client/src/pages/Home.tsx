@@ -42,7 +42,13 @@ export default function Connexion() {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
 
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      credentials: "include",
+
       body: JSON.stringify({
         username: mail,
         password
@@ -59,7 +65,7 @@ export default function Connexion() {
 
     // erreur si data pas ok
     else {
-      alert(data.message);
+      alert(data.error);
     }
   };
   

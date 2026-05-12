@@ -30,15 +30,20 @@ export default function Inscription() {
     }
 
     const response = await fetch("http://localhost:3000/users", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      lastname,
-      firstname,
-      mail,
-      password,
-    }),
-  });
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      credentials: "include",
+
+      body: JSON.stringify({
+        lastname,
+        firstname,
+        mail,
+        password,
+      }),
+    });
 
   const data = await response.json();
   console.log("Réponse backend :", data);
