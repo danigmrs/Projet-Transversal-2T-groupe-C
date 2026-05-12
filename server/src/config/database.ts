@@ -3,10 +3,14 @@ dotenv.config();
 
 import { Sequelize } from "sequelize";
 
-const dbHost = process.env.DB_HOST;
-/*if (!dbHost) {
+const sequelize = new Sequelize('database', 'username', 'password', {
+  host: 'localhost',
+  dialect: "sqlite"});
+
+/*const dbHost = process.env.DB_HOST;
+if (!dbHost) {
   throw new Error("DB_HOST is not defined");
-}*/
+}
 
 export const sequelize = new Sequelize(
   process.env.DB_NAME as string,      // nom de la base
@@ -17,6 +21,6 @@ export const sequelize = new Sequelize(
     dialect: "mysql",
     logging: false,
   }
-);
+);*/
 
 export default sequelize;
