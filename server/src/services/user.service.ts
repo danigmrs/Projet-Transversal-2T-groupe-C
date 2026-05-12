@@ -1,81 +1,37 @@
-import Utilisateur from "../models/user.js";
+import Utilisateur from "../models/User";
 
 export class UserService {
 
-  /**
-   * GET ALL USERS
-   */
-  static async getAllUsers() {
-    return await Utilisateur.findAll();
+  static async getUsers() {
+    return Utilisateur.findAll();
   }
 
-  /**
-   * GET USER BY ID
-   */
   static async getUserById(id: number) {
-    return await Utilisateur.findByPk(id);
+    return Utilisateur.findByPk(id);
   }
 
-  /**
-   * CREATE USER
-   */
   static async createUser(data: {
-    lastname: string;
-    firstname: string;
-    mail: string;
-    password: string;
+    nom_user: string;
+    prenom_user: string;
+    mail_user: string;
+    mdp_user: string;
   }) {
-
-    return await Utilisateur.create({
-      nom_user: data.lastname,
-      prenom_user: data.firstname,
-      mail_user: data.mail,
-      mdp_user: data.password,
-    });
+    return Utilisateur.create(data);
   }
 
-  /**
-   * UPDATE USER
-   */
-  static async updateUser(
-    id: number,
-    data: {
-      lastname?: string;
-      firstname?: string;
-      mail?: string;
-      password?: string;
-    }
-  ) {
-
+  static async updateUser(id: number, data: any) {
     const user = await Utilisateur.findByPk(id);
+    if (!user) return null;
 
-    if (!user) {
-      return null;
-    }
-
-    await user.update({
-      nom_user: data.lastname,
-      prenom_user: data.firstname,
-      mail_user: data.mail,
-      mdp_user: data.password,
-    });
-
+    await user.update(data);
     return user;
   }
 
-  /**
-   * DELETE USER
-   */
   static async deleteUser(id: number) {
-
     const user = await Utilisateur.findByPk(id);
-
-    if (!user) {
-      return null;
-    }
+    if (!user) return null;
 
     await user.destroy();
-
     return true;
   }
 }

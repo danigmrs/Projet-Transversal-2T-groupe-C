@@ -1,6 +1,6 @@
 import app from "./app";
 import sequelize from "./config/database";
-import "./models/user";
+import "./models/User";
 import "./models/Scores";
 import "./models/Associations";
 

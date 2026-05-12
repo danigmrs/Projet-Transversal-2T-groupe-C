@@ -1,20 +1,15 @@
 import type { Request, Response } from "express";
-import Utilisateur from "../models/Utilisateur.js";
-
+import { UserService } from "../services/user.service";
 
 /**
  * GET ALL USERS
  */
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    
-    const users = await Utilisateur.findAll();
-
+    const users = await UserService.getUsers();
     res.json(users);
   } catch (err: any) {
-    res.status(500).json({
-      error: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -23,22 +18,19 @@ export const getUsers = async (req: Request, res: Response) => {
  */
 export const getUserById = async (req: Request, res: Response) => {
   try {
-    const user = await Utilisateur.findByPk(Number(req.params.id));
+    const id = Number(req.params.id);
+
+    const user = await UserService.getUserById(id);
 
     if (!user) {
-      return res.status(404).json({
-        error: "Utilisateur non trouvé",
-      });
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
 
     res.json(user);
   } catch (err: any) {
-    res.status(500).json({
-      error: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };
-
 
 /**
  * CREATE USER
@@ -48,12 +40,10 @@ export const createUser = async (req: Request, res: Response) => {
     const { lastname, firstname, mail, password } = req.body;
 
     if (!lastname || !firstname || !mail || !password) {
-      return res.status(400).json({
-        error: "Champs manquants",
-      });
+      return res.status(400).json({ error: "Champs manquants" });
     }
 
-    const user = await Utilisateur.create({
+    const user = await UserService.createUser({
       nom_user: lastname,
       prenom_user: firstname,
       mail_user: mail,
@@ -61,11 +51,8 @@ export const createUser = async (req: Request, res: Response) => {
     });
 
     res.status(201).json(user);
-
   } catch (err: any) {
-    res.status(500).json({
-      error: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -74,28 +61,22 @@ export const createUser = async (req: Request, res: Response) => {
  */
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    const user = await Utilisateur.findByPk(Number(req.params.id));
+    const id = Number(req.params.id);
+
+    const user = await UserService.updateUser(id, {
+      nom_user: req.body.lastname,
+      prenom_user: req.body.firstname,
+      mail_user: req.body.mail,
+      mdp_user: req.body.password,
+    });
 
     if (!user) {
-      return res.status(404).json({
-        error: "Utilisateur non trouvé",
-      });
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
-
-    const { lastname, firstname, mail, password } = req.body;
-
-    await user.update({
-      nom_user: lastname,
-      prenom_user: firstname,
-      mail_user: mail,
-      mdp_user: password,
-    });
 
     res.json(user);
   } catch (err: any) {
-    res.status(500).json({
-      error: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -104,22 +85,16 @@ export const updateUser = async (req: Request, res: Response) => {
  */
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const user = await Utilisateur.findByPk(Number(req.params.id));
+    const id = Number(req.params.id);
 
-    if (!user) {
-      return res.status(404).json({
-        error: "Utilisateur non trouvé",
-      });
+    const deleted = await UserService.deleteUser(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
 
-    await user.destroy();
-
-    res.json({
-      message: "Utilisateur supprimé",
-    });
+    res.json({ message: "Utilisateur supprimé" });
   } catch (err: any) {
-    res.status(500).json({
-      error: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 };

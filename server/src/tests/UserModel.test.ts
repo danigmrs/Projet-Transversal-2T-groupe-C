@@ -1,5 +1,5 @@
 import sequelize from "../config/database";
-import Utilisateur from "../models/user";
+import User from "../models/User";
 
 beforeAll(async () => {
   await sequelize.sync({ force: true });
@@ -10,7 +10,7 @@ afterAll(async () => {
 });
 
 test("Créer un utilisateur", async () => {
-  const user = await Utilisateur.create({
+  const user = await User.create({
     nom_user: "Colard",
     prenom_user: "Manon",
     mail_user: "manon@colard.be",

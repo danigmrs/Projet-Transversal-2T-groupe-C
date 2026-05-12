@@ -1,4 +1,4 @@
-import Utilisateur from "./user";    
+import Utilisateur from "./User";    
 import Scores from "./Scores";
 
 // Association entre Utilisateur et Scores

@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes";
-import UserRoutes from "./routes/userRoutes.js";
+import UserRoutes from "./routes/user.routes";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./docs/swagger";
 import cookieParser from "cookie-parser";
