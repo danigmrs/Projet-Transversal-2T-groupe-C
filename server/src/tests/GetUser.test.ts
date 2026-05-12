@@ -1,5 +1,5 @@
 import app from "../app";
-import User from "../models/User";
+import User from "../models/user";
 import request from "supertest";
 import sequelize from "../config/database";
 import { NextFunction } from "express";

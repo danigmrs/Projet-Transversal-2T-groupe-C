@@ -1,4 +1,4 @@
-import User from "../models/User";
+import User from "../models/user";
 import app from "../app";
 import request from "supertest";
 import sequelize from "../config/database";

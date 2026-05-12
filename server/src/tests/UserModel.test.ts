@@ -1,5 +1,5 @@
 import sequelize from "../config/database";
-import User from "../models/User";
+import User from "../models/user";
 
 beforeAll(async () => {
   await sequelize.sync({ force: true });
