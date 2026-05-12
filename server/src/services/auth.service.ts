@@ -1,13 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import Utilisateur from "../models/User";
+import User from "../models/User";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "secret";
 
 export class AuthService {
 
   static async register(username: string, password: string) {
-    const existing = await Utilisateur.findOne({
+    const existing = await User.findOne({
       where: { mail_user: username },
     });
 
@@ -17,7 +17,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await Utilisateur.create({
+    const user = await User.create({
       nom_user: "inconnu",
       prenom_user: "inconnu",
       mail_user: username,
@@ -32,7 +32,7 @@ export class AuthService {
 
   static async login(username: string, password: string) {
 
-    const user = await Utilisateur.findOne({
+    const user = await User.findOne({
       where: { mail_user: username },
     });
 
