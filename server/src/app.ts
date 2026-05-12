@@ -5,6 +5,8 @@ import UserRoutes from "./routes/user.routes";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./docs/swagger";
 import cookieParser from "cookie-parser";
+import { Server } from "mysql2/typings/mysql/lib/Server";
+import scoresRoutes from "./routes/scores.routes";
 
 const app = express();
 
@@ -22,6 +24,7 @@ app.use("/auth", authRoutes);
  
 app.use("/users", UserRoutes);
 
+app.use("/scores", scoresRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
