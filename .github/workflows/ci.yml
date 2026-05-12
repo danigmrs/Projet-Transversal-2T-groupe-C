@@ -18,6 +18,11 @@ jobs:
         working-directory: ./server
         run: npm ci
 
+
+      - name: Create test DB file
+        working-directory: ./server
+        run: touch database.sqlite
+
       - name: Give permission to binaries
         working-directory: ./server
         run: chmod +x node_modules/.bin/* || true
@@ -25,7 +30,3 @@ jobs:
       - name: Run unit tests
         working-directory: ./server
         run: npm test
-
-        - name: Create test DB file
-        working-directory: ./server
-        run: touch database.sqlite
