@@ -11,6 +11,11 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
+
+  
+  
+
+
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -23,6 +28,7 @@
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.22.3",
     "sequelize": "^6.37.8",
+    "sqlite3": "^6.0.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },

@@ -1,18 +1,9 @@
-import mysql from "mysql2";
+import { Sequelize } from "sequelize";
 
-const db = mysql.createConnection({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "test",
+const sequelize = new Sequelize({
+  dialect: "sqlite",
+  storage: "./database.sqlite", // fichier local
+  logging: false,
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error("❌ DB connection error:", err);
-  } else {
-    console.log("✅ Connected to MySQL");
-  }
-});
-
-export default db;
+export default sequelize;
