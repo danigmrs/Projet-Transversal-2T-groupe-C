@@ -1,28 +1,23 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
+import {
+  UserAttributes,
+  UserCreationAttributes,
+} from "../types/user";
 
 
- //Définition des attributs
- 
-interface UserAttributes {
-  id_user: number;
-  nom_user: string;
-  prenom_user: string;
-  mail_user: string;
-  mdp_user: string;
-}
 
-//Attributs optionnels (pour create)
- 
-interface UserCreationAttributes
-  extends Optional<UserAttributes, "id_user"> {}
-
-// Classe Model typée
  
 class User
   extends Model<UserAttributes, UserCreationAttributes>
-  implements UserAttributes
-{} // vide car écrase les getter/setter
+  
+{
+  declare id_user: number;
+  declare nom_user: string;
+  declare prenom_user: string;
+  declare mail_user: string;
+  declare mdp_user: string;
+} // vide car écrase les getter/setter
 
 
 User.init(
