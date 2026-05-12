@@ -1,9 +1,7 @@
 import type { Request, Response } from "express";
 import { UserService } from "../services/user.service";
 
-/**
- * GET ALL USERS
- */
+//récupère tous les users
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const users = await UserService.getUsers();
@@ -13,9 +11,7 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * GET USER BY ID
- */
+//récupère user par son id
 export const getUserById = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -32,9 +28,7 @@ export const getUserById = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * CREATE USER
- */
+//crée  user
 export const createUser = async (req: Request, res: Response) => {
   try {
     const { lastname, firstname, mail, password } = req.body;
@@ -56,9 +50,7 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * UPDATE USER
- */
+//modifie user
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
@@ -80,9 +72,7 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * DELETE USER
- */
+//supprime user
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);

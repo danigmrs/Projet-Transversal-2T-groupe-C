@@ -39,7 +39,7 @@ export default function Connexion() {
     }
 
     //vérif data en demandant a api 
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
 
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -52,9 +52,9 @@ export default function Connexion() {
     //renvoie réponse api
     const data = await response.json();
 
-    // envoie a Home si data ok
+    // envoie a Game si data ok
     if (response.ok) {
-      navigate("/Home");
+      navigate("/Game");
     } 
 
     // erreur si data pas ok

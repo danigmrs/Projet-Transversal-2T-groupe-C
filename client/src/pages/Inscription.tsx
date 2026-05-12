@@ -29,7 +29,7 @@ export default function Inscription() {
       return;
     }
 
-    const response = await fetch("http://91.134.138.136:3000/api/users", {
+    const response = await fetch("http://localhost:3000/users", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -44,7 +44,7 @@ export default function Inscription() {
   console.log("Réponse backend :", data);
 
   if (response.ok) {
-    navigate("/login");
+    navigate("/");
   } else {
     alert(data.error);
   }
