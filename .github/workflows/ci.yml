@@ -29,4 +29,4 @@ jobs:
 
       - name: Run unit tests
         working-directory: ./server
-        run: npm test
+        run: npx jest
