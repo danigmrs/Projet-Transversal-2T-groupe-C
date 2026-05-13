@@ -1,6 +1,5 @@
 import { DataTypes, Model } from "sequelize";
-import sequelize from "../config/database.js";
-import Users from "./user";
+import sequelize from "../config/database";
 
 class Scores extends Model {
   public id_score!: number;
