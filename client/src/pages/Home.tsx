@@ -72,7 +72,7 @@ export default function Connexion() {
   //html page
   return (
     <div className="connexion-container">
-      <h1>Simon groupe C</h1>
+      <h1>Simon Groupe C</h1>
 
 
       <input
