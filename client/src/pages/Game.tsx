@@ -43,6 +43,8 @@ export default function SimonGame() {
   useEffect(() => { playerInputRef.current = playerInput; }, [playerInput]);
   useEffect(() => { masterSeqRef.current = masterSeq; },    [masterSeq]);
   useEffect(() => { scoreRef.current = score; },            [score]);
+  
+ 
  
   // ── Fetch leaderboard ──────────────────────────────────────────────────────
   const fetchLeaderboard = useCallback(async () => {
@@ -415,3 +417,7 @@ export default function SimonGame() {
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
  
+function setColor(data: any): any {
+  throw new Error("Function not implemented.");
+}
+
