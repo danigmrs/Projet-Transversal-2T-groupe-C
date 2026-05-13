@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "mqtt": "^5.15.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "sequelize": "^6.37.8",
@@ -7,6 +8,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/mqtt": "^0.0.34",
     "@types/supertest": "^7.2.0",
     "jest": "^30.4.2",
     "supertest": "^7.2.2",
