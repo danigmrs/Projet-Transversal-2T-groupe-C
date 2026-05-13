@@ -12,7 +12,12 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://192.168.20.22:5173",
+    origin:  [
+    "http://192.168.20.22:5173",
+    "http://192.168.20.22:8080",
+    "http://web.groupe03.lab:8080",
+    "http://web.groupe03.lab"
+  ],
     credentials: true,
   })
 );
