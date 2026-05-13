@@ -1,24 +1,17 @@
-import { DataTypes, Model, Optional } from "sequelize";
+import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/database";
 import {
   UserAttributes,
   UserCreationAttributes,
 } from "../types/userType";
 
-
-
- 
-class User
-  extends Model<UserAttributes, UserCreationAttributes>
-  
-{
+class User extends Model<UserAttributes, UserCreationAttributes> {
   declare id_user: number;
   declare nom_user: string;
   declare prenom_user: string;
   declare mail_user: string;
   declare mdp_user: string;
-} // vide car écrase les getter/setter
-
+}
 
 User.init(
   {

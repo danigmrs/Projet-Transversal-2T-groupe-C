@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Scores from "../models/Scores";
+import User from "../models/user";
 
 export class ScoresController {
   static async create(req: Request, res: Response) {
@@ -22,6 +23,13 @@ export class ScoresController {
       const scores = await Scores.findAll({
         order: [["score", "DESC"]],
         limit: 5,
+        include: [
+          {
+            model: User,
+            as: "utilisateur", // IMPORTANT
+            attributes: ["prenom_user", "nom_user"],
+          },
+        ],
       });
 
       return res.json(scores);

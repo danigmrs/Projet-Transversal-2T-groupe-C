@@ -27,6 +27,7 @@ export default function SimonGame() {
   const [resultMsg,    setResultMsg]    = useState<string>("");
   const [leaderboard,  setLeaderboard]  = useState<any[]>([]);
   const [playerName,   setPlayerName]   = useState<string>("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [serialStatus, setSerialStatus] = useState<string>("disconnected");
   const [serialLog,    setSerialLog]    = useState<string[]>([]);
  
@@ -43,9 +44,15 @@ export default function SimonGame() {
   useEffect(() => { playerInputRef.current = playerInput; }, [playerInput]);
   useEffect(() => { masterSeqRef.current = masterSeq; },    [masterSeq]);
   useEffect(() => { scoreRef.current = score; },            [score]);
-  
- 
- 
+
+  useEffect(() => {
+    fetch("http://localhost:3000/auth/me", {
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(setCurrentUser)
+      .catch(err => console.error("Auth error:", err));
+  }, []);
   // ── Fetch leaderboard ──────────────────────────────────────────────────────
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -66,19 +73,30 @@ export default function SimonGame() {
   // ── Save score to backend ──────────────────────────────────────────────────
   const saveScore = useCallback(async (finalScore: number) => {
     if (finalScore === 0) return;
+    if (!currentUser?.id_user) return;
+
     try {
-      await fetch("http://localhost:3000/scores", {
+      const res = await fetch("http://localhost:3000/scores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          id_user: 1, // temporaire
-          score: finalScore
+          id_user: currentUser.id_user,
+          score: finalScore,
         }),
       });
+
+      if (!res.ok) {
+        const err = await res.text();
+        console.error("Backend error:", err);
+        return;
+      }
+
       fetchLeaderboard();
-    } catch (_) {}
-  }, [fetchLeaderboard]);
+    } catch (err) {
+      console.error("Erreur saveScore:", err);
+    }
+  }, [fetchLeaderboard, currentUser?.id_user]);
  
   // ── Ajoute une couleur aléatoire à la séquence maître ─────────────────────
   const appendColor = (): Color => COLORS[Math.floor(Math.random() * COLORS.length)];
@@ -376,6 +394,35 @@ export default function SimonGame() {
               </button>
             </div>
           )}
+
+          {/* 🏆 LEADERBOARD (toujours en dessous) */}
+          <div className="sg-leaderboard-container">
+            <h2>🏆 Top 5</h2>
+
+            <table className="sg-leaderboard">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Joueur</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {leaderboard.map((entry, i) => (
+                  <tr key={entry.id_score}>
+                    <td>#{i + 1}</td>
+
+                    <td>
+                      {entry.utilisateur?.prenom_user} {entry.utilisateur?.nom_user}
+                    </td>
+
+                    <td>{entry.score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </main>
  
         {/* ── Right panel: Pico ── */}
