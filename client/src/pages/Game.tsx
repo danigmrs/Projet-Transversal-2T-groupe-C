@@ -274,21 +274,7 @@ export default function SimonGame() {
  
         {/* ── Left panel: Leaderboard ── */}
         <aside className="sg-panel sg-panel--left">
-          <h2 className="sg-panel-title">TOP 5</h2>
-          <ol className="sg-leaderboard">
-            {leaderboard.map((entry, i) => (
-              <li key={entry.id_score} className={`sg-lb-row sg-lb-row--${i + 1}`}>
-                <span className="sg-lb-rank">#{i + 1}</span>
-                <span className="sg-lb-name">
-                  {entry.prenom_user} {entry.nom_user?.[0]}.
-                </span>
-                <span className="sg-lb-score">{entry.score}</span>
-              </li>
-            ))}
-            {leaderboard.length === 0 && (
-              <li className="sg-lb-empty">Aucun score</li>
-            )}
-          </ol>
+          
         </aside>
  
         {/* ── Center: Game ── */}
