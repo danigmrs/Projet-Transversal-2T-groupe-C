@@ -34,6 +34,10 @@ test("should return 400 if id is negative", () => {
   checkIdParam(req, res, next);
 
   expect(res.status).toHaveBeenCalledWith(400);
+  expect(res.json).toHaveBeenCalledWith({
+    error: "ID invalide",
+  });
+  expect(next).not.toHaveBeenCalled();
 });
 
 test("should call next if id is valid", () => {
