@@ -14,7 +14,7 @@ const COLOR_META: Record<Color, { hex: string; glow: string; label: string }> = 
   blue:   { hex: "#00BFFF", glow: "#00BFFF88", label: "B" },
 };
  
-const BROKER_URL  = "ws://10.214.81.52:9001";   // WebSocket Mosquitto
+const BROKER_URL  = "ws://192.168.20.22:9001";   // WebSocket Mosquitto
 const TOPIC_PRESS = "pico/groupe3/simon/press";  // Pico → Site
 const TOPIC_CMD   = "pico/groupe3/simon/cmd";    // Site → Pico
  
