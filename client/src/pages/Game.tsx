@@ -1,7 +1,9 @@
-import  "../utils/Game.css";
+import "../utils/Game.css";
 
 import { useState, useEffect, useRef, useCallback } from "react";
- 
+
+import mqtt from "mqtt";
+
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 type Color = 'yellow' | 'green' | 'red' | 'blue';
 const COLORS: Color[] = ["yellow", "green", "red", "blue"];
@@ -11,48 +13,53 @@ const COLOR_META: Record<Color, { hex: string; glow: string; label: string }> = 
   red:    { hex: "#FF2D55", glow: "#FF2D5588", label: "R" },
   blue:   { hex: "#00BFFF", glow: "#00BFFF88", label: "B" },
 };
- 
+
+const BROKER_URL  = "ws://10.214.81.52:9001";   // WebSocket Mosquitto
+const TOPIC_PRESS = "pico/groupe3/simon/press";  // Pico → Site
+const TOPIC_CMD   = "pico/groupe3/simon/cmd";    // Site → Pico
+
 const FLASH_DURATION = 500; // ms each color lit
 const FLASH_PAUSE    = 200; // ms between flashes
-// La séquence maître grandit de 1 couleur à chaque manche (vrai Simon)
- 
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function SimonGame() {
-  const [masterSeq,    setMasterSeq]    = useState<Color[]>([]);   // séquence maître complète (grandit)
-  const [playerInput,  setPlayerInput]  = useState<Color[]>([]);   // saisie en cours du joueur
-  const [phase,        setPhase]        = useState<string>("idle"); // idle | showing | waiting | gameover
-  const [litColor,     setLitColor]     = useState<Color | "error" | null>(null);
-  const [score,        setScore]        = useState<number>(0);    // nb de couleurs mémorisées
-  const [round,        setRound]        = useState<number>(0);    // longueur de la séquence affichée
-  const [resultMsg,    setResultMsg]    = useState<string>("");
-  const [leaderboard,  setLeaderboard]  = useState<any[]>([]);
-  const [playerName,   setPlayerName]   = useState<string>("");
+  const [masterSeq,   setMasterSeq]   = useState<Color[]>([]);
+  const [playerInput, setPlayerInput] = useState<Color[]>([]);
+  const [phase,       setPhase]       = useState<string>("idle");
+  const [litColor,    setLitColor]    = useState<Color | "error" | null>(null);
+  const [score,       setScore]       = useState<number>(0);
+  const [round,       setRound]       = useState<number>(0);
+  const [resultMsg,   setResultMsg]   = useState<string>("");
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [playerName,  setPlayerName]  = useState<string>("");
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [serialStatus, setSerialStatus] = useState<string>("disconnected");
-  const [serialLog,    setSerialLog]    = useState<string[]>([]);
- 
-  const portRef        = useRef<any>(null);
-  const writerRef      = useRef<any>(null);
-  const readerRef      = useRef<any>(null);
-  const readLoopRef    = useRef<Promise<void> | null>(null);
+  const [mqttStatus,  setMqttStatus]  = useState<string>("disconnected");
+  const [mqttLog,     setMqttLog]     = useState<string[]>([]);
+
+  const clientRef      = useRef<any>(null);
   const phaseRef       = useRef<string>(phase);
   const playerInputRef = useRef<Color[]>(playerInput);
   const masterSeqRef   = useRef<Color[]>(masterSeq);
   const scoreRef       = useRef<number>(score);
- 
-  useEffect(() => { phaseRef.current = phase; },       [phase]);
+
+  useEffect(() => { phaseRef.current       = phase;       }, [phase]);
   useEffect(() => { playerInputRef.current = playerInput; }, [playerInput]);
-  useEffect(() => { masterSeqRef.current = masterSeq; },    [masterSeq]);
-  useEffect(() => { scoreRef.current = score; },            [score]);
+  useEffect(() => { masterSeqRef.current   = masterSeq;   }, [masterSeq]);
+  useEffect(() => { scoreRef.current       = score;       }, [score]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/auth/me", {
-      credentials: "include",
-    })
+    fetch("http://localhost:3000/auth/me", { credentials: "include" })
       .then(res => res.json())
-      .then(setCurrentUser)
+      .then((user) => {
+        setCurrentUser(user);
+        if (user?.prenom_user) setPlayerName(user.prenom_user);
+      })
       .catch(err => console.error("Auth error:", err));
   }, []);
+
   // ── Fetch leaderboard ──────────────────────────────────────────────────────
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -60,16 +67,61 @@ export default function SimonGame() {
       if (res.ok) setLeaderboard(await res.json());
     } catch (_) {}
   }, []);
- 
+
   useEffect(() => {
     fetchLeaderboard();
-    // Get current user name from session/token (adapt to your auth)
-    const stored = localStorage.getItem("user");
-    if (stored) {
-      try { setPlayerName(JSON.parse(stored).prenom_user || ""); } catch (_) {}
-    }
   }, [fetchLeaderboard]);
- 
+
+  // ── Connexion MQTT ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const c = mqtt.connect(BROKER_URL);
+    clientRef.current = c;
+
+    c.on("connect", () => {
+      setMqttStatus("connected");
+      logMqtt("Broker MQTT connecté ✓");
+      c.subscribe(TOPIC_PRESS);
+    });
+
+    c.on("error", (err: any) => {
+      setMqttStatus("error");
+      logMqtt(`Erreur: ${err.message}`);
+    });
+
+    c.on("close", () => {
+      setMqttStatus("disconnected");
+      logMqtt("Déconnecté du broker");
+    });
+
+    c.on("message", (topic: string, msg: Buffer) => {
+      const text = msg.toString().trim();
+      logMqtt(`← ${text}`);
+
+      if (topic === TOPIC_PRESS && text.startsWith("PRESS:")) {
+        const color = text.split(":")[1]?.toLowerCase();
+        if (color && COLORS.includes(color as Color)) {
+          if (phaseRef.current === "waiting") {
+            handleColorPress(color as Color);
+          }
+        }
+      }
+    });
+
+    return () => { c.end(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Publish vers le Pico ───────────────────────────────────────────────────
+  const publish = useCallback((msg: string) => {
+    if (!clientRef.current) return;
+    clientRef.current.publish(TOPIC_CMD, msg);
+    logMqtt(`→ ${msg}`);
+  }, []);
+
+  const logMqtt = (msg: string) => {
+    setMqttLog(l => [...l.slice(-19), msg]);
+  };
+
   // ── Save score to backend ──────────────────────────────────────────────────
   const saveScore = useCallback(async (finalScore: number) => {
     if (finalScore === 0) return;
@@ -97,30 +149,31 @@ export default function SimonGame() {
       console.error("Erreur saveScore:", err);
     }
   }, [fetchLeaderboard, currentUser?.id_user]);
- 
+
   // ── Ajoute une couleur aléatoire à la séquence maître ─────────────────────
   const appendColor = (): Color => COLORS[Math.floor(Math.random() * COLORS.length)];
- 
-  // ── Flash la séquence visible (du début jusqu'à roundLen) ─────────────────
+
+  // ── Flash la séquence visible ──────────────────────────────────────────────
   const showSequence = useCallback(async (seq: Color[]) => {
+    setPhase("showing");
     setLitColor(null);
     await delay(600);
- 
+
     for (const color of seq) {
       setLitColor(color);
-      await sendSerial(`SHOW:${color}\n`);
+      publish(`SHOW:${color}`);
       await delay(FLASH_DURATION);
       setLitColor(null);
-      await sendSerial("OFF\n");
+      publish("OFF");
       await delay(FLASH_PAUSE);
     }
- 
+
     await delay(300);
     setPhase("waiting");
     setPlayerInput([]);
-  }, []);
- 
-  // ── Démarre une nouvelle manche (séquence += 1 couleur) ───────────────────
+  }, [publish]);
+
+  // ── Démarre une nouvelle manche ────────────────────────────────────────────
   const nextRound = useCallback(async (prevMaster: Color[]) => {
     const newColor = appendColor();
     const newSeq   = [...prevMaster, newColor];
@@ -128,8 +181,8 @@ export default function SimonGame() {
     setRound(newSeq.length);
     await showSequence(newSeq);
   }, [showSequence]);
- 
-  // ── Démarre le jeu (repart à zéro) ────────────────────────────────────────
+
+  // ── Démarre le jeu ─────────────────────────────────────────────────────────
   const startGame = useCallback(async () => {
     setScore(0);
     setRound(0);
@@ -143,16 +196,15 @@ export default function SimonGame() {
     await delay(400);
     await showSequence(firstSeq);
   }, [showSequence]);
- 
-  // ── Gestion d'une pression couleur (écran ou Pico) ────────────────────────
+
+  // ── Gestion d'une pression couleur ────────────────────────────────────────
   const handleColorPress = useCallback((color: Color) => {
- 
     const newInput = [...playerInputRef.current, color];
     setPlayerInput(newInput);
- 
+
     const seq = masterSeqRef.current;
     const idx = newInput.length - 1;
- 
+
     // ❌ Mauvaise couleur → game over
     if (newInput[idx] !== seq[idx]) {
       setPhase("gameover");
@@ -162,295 +214,197 @@ export default function SimonGame() {
       setTimeout(() => setLitColor(null), 800);
       return;
     }
- 
+
     // ✅ Toute la séquence saisie correctement
     if (newInput.length === seq.length) {
-      // +1 point par couleur mémorisée (= longueur de la séquence)
       const newScore = seq.length;
       setScore(newScore);
       setResultMsg("✓ BRAVO !");
       setPhase("result");
       setTimeout(async () => {
         setResultMsg("");
-        // Lance la manche suivante avec la séquence courante (masterSeqRef à jour)
         await nextRound(masterSeqRef.current);
       }, 900);
     }
   }, [saveScore, nextRound]);
- 
-  // ── Serial (Web Serial API) ───────────────────────────────────────────────
-  const sendSerial = async (msg: string) => {
-    if (!writerRef.current) return;
-    try {
-      const enc = new TextEncoder();
-      await writerRef.current.write(enc.encode(msg));
-    } catch (_) {}
-  };
- 
-  const connectSerial = async () => {
-    if (!("serial" in navigator)) {
-      alert("Web Serial API non supporté. Utilisez Chrome/Edge.");
-      return;
-    }
-    try {
-      const port = await (navigator as any).serial.requestPort();
-      await port.open({ baudRate: 115200 });
-      portRef.current = port;
- 
-      const writer = port.writable.getWriter();
-      writerRef.current = writer;
- 
-      const reader = port.readable.getReader();
-      readerRef.current = reader;
-      setSerialStatus("connected");
-      logSerial("Pico connecté ✓");
- 
-      // Read loop
-      const readLoop = async () => {
-        const dec = new TextDecoder();
-        let buf = "";
-        try {
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buf += dec.decode(value);
-            const lines = buf.split("\n");
-            buf = lines.pop() || "";
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed) continue;
-              logSerial(`← ${trimmed}`);
-              // Pico sends "PRESS:color"
-              if (trimmed.startsWith("PRESS:")) {
-                const color = trimmed.split(":")[1]?.toLowerCase();
-                if (color && COLORS.includes(color as Color)) handleColorPress(color as Color);
-              }
-            }
-          }
-        } catch (_) {}
-      };
-      readLoopRef.current = readLoop();
-    } catch (err: any) {
-      logSerial(`Erreur: ${err.message}`);
-    }
-  };
- 
-  const disconnectSerial = async () => {
-    try {
-      readerRef.current?.cancel();
-      writerRef.current?.releaseLock();
-      await portRef.current?.close();
-    } catch (_) {}
-    portRef.current = null;
-    writerRef.current = null;
-    readerRef.current = null;
-    setSerialStatus("disconnected");
-    logSerial("Déconnecté");
-  };
- 
-  const logSerial = (msg: string) => {
-    setSerialLog(l => [...l.slice(-19), msg]);
-  };
 
   const handleLogout = async () => {
-  try {
-    await fetch("http://localhost:3000/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
+    try {
+      await fetch("http://localhost:3000/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
 
-    localStorage.removeItem("user");
+      localStorage.removeItem("user");
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Erreur logout :", error);
+    }
+  };
 
-    window.location.href = "/";
-  } catch (error) {
-    console.error("Erreur logout :", error);
-  }
-};
- 
   // ─── RENDER ───────────────────────────────────────────────────────────────
   return (
-    <>
-      <div className="sg-root">
- 
-        {/* ── Left panel: Leaderboard ── */}
-        <aside className="sg-panel sg-panel--left">
-          
-        </aside>
- 
-        {/* ── Center: Game ── */}
-        <main className="sg-center">
-          <header className="sg-header">
-            <div className="sg-scanline" />
-            <h1 className="sg-title">SIMON</h1>
-            <p className="sg-subtitle">MEMORY CHALLENGE</p>
-            <button className="sg-logout-btn" onClick={handleLogout}>
-              Déconnexion
-            </button>
-          </header>
- 
-          {/* Score & Round */}
-          <div className="sg-stats">
-            <div className="sg-stat">
-              <span className="sg-stat-label">MANCHE</span>
-              <span className="sg-stat-val">{round || "—"}</span>
-            </div>
-            <div className="sg-stat sg-stat--score">
-              <span className="sg-stat-label">SCORE</span>
-              <span className="sg-stat-val sg-stat-val--big">{score}</span>
-            </div>
-            <div className="sg-stat">
-              <span className="sg-stat-label">JOUEUR</span>
-              <span className="sg-stat-val sg-stat-val--name">{playerName || "—"}</span>
-            </div>
+    <div className="sg-root">
+
+      {/* ── Left panel: Leaderboard ── */}
+      <aside className="sg-panel sg-panel--left">
+      </aside>
+
+      {/* ── Center: Game ── */}
+      <main className="sg-center">
+        <header className="sg-header">
+          <div className="sg-scanline" />
+          <h1 className="sg-title">SIMON</h1>
+          <p className="sg-subtitle">MEMORY CHALLENGE</p>
+          <button className="sg-logout-btn" onClick={handleLogout}>
+            Déconnexion
+          </button>
+        </header>
+
+        {/* Score & Round */}
+        <div className="sg-stats">
+          <div className="sg-stat">
+            <span className="sg-stat-label">MANCHE</span>
+            <span className="sg-stat-val">{round || "—"}</span>
           </div>
- 
-          {/* Result message */}
-          {resultMsg && (
-            <div className="sg-result-msg sg-result-msg--ok">
-              {resultMsg}
-            </div>
+          <div className="sg-stat sg-stat--score">
+            <span className="sg-stat-label">SCORE</span>
+            <span className="sg-stat-val sg-stat-val--big">{score}</span>
+          </div>
+          <div className="sg-stat">
+            <span className="sg-stat-label">JOUEUR</span>
+            <span className="sg-stat-val sg-stat-val--name">{playerName || "—"}</span>
+          </div>
+        </div>
+
+        {/* Result message */}
+        {resultMsg && (
+          <div className="sg-result-msg sg-result-msg--ok">
+            {resultMsg}
+          </div>
+        )}
+        {phase === "gameover" && !resultMsg && (
+          <div className="sg-result-msg sg-result-msg--err">✗ GAME OVER</div>
+        )}
+
+        <div className="sg-grid">
+          {COLORS.map(color => {
+            const meta    = COLOR_META[color];
+            const isLit   = litColor === color;
+            const isError = litColor === "error";
+            return (
+              <button
+                key={color}
+                className={`sg-btn sg-btn--${color} ${isLit ? "sg-btn--lit" : ""} ${isError ? "sg-btn--error" : ""}`}
+                style={{ "--c": meta.hex, "--glow": meta.glow } as React.CSSProperties}
+                onClick={() => handleColorPress(color)}
+                disabled={phase !== "waiting"}
+                aria-label={color}
+              >
+                <span className="sg-btn-label">{meta.label}</span>
+                <span className="sg-btn-shine" />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Phase indicator */}
+        <div className="sg-phase-row">
+          {phase === "showing" && (
+            <span className="sg-phase sg-phase--showing">▶ SÉQUENCE EN COURS…</span>
           )}
-          {phase === "gameover" && !resultMsg && (
-            <div className="sg-result-msg sg-result-msg--err">✗ GAME OVER</div>
+          {phase === "waiting" && (
+            <span className="sg-phase sg-phase--waiting">⬤ À VOUS DE JOUER</span>
           )}
- 
-          <div className="sg-grid">
-            {COLORS.map(color => {
-              const meta = COLOR_META[color];
-              const isLit = litColor === color;
-              const isError = litColor === "error";
+          {phase === "idle" && (
+            <span className="sg-phase sg-phase--idle">Prêt ?</span>
+          )}
+        </div>
+
+        {/* Progress dots */}
+        {phase === "waiting" && (
+          <div className="sg-progress">
+            {masterSeq.map((c, i) => {
+              const pressed = i < playerInput.length;
               return (
-                <button
-                  key={color}
-                  className={`sg-btn sg-btn--${color} ${isLit ? "sg-btn--lit" : ""} ${isError ? "sg-btn--error" : ""}`}
-                  style={{"--c": meta.hex, "--glow": meta.glow} as any}
-                  onClick={() => handleColorPress(color)}
-                  disabled={phase !== "waiting"}
-                  aria-label={color}
-                >
-                  <span className="sg-btn-label">{meta.label}</span>
-                  <span className="sg-btn-shine" />
-                </button>
+                <span
+                  key={i}
+                  className={`sg-dot ${pressed ? "sg-dot--done" : ""}`}
+                  style={{ "--c": pressed ? COLOR_META[c].hex : "#ffffff33" } as React.CSSProperties}
+                />
               );
             })}
           </div>
- 
-          {/* Phase indicator */}
-          <div className="sg-phase-row">
-            {phase === "showing" && (
-              <span className="sg-phase sg-phase--showing">▶ SÉQUENCE EN COURS…</span>
-            )}
-            {phase === "waiting" && (
-              <span className="sg-phase sg-phase--waiting">⬤ À VOUS DE JOUER</span>
-            )}
-            {phase === "idle" && (
-              <span className="sg-phase sg-phase--idle">Prêt ?</span>
-            )}
-          </div>
- 
-          {/* Progress dots — les couleurs ne s'affichent qu'après validation par le joueur */}
-          {phase === "waiting" && (
-            <div className="sg-progress">
-              {masterSeq.map((c, i) => {
-                const pressed = i < playerInput.length;
-                return (
-                  <span
-                    key={i}
-                    className={`sg-dot ${pressed ? "sg-dot--done" : ""}`}
-                    style={{"--c": pressed ? COLOR_META[c].hex : "#ffffff33"} as any}
-                  />
-                );
-              })}
-            </div>
-          )}
- 
-          {/* Bouton démarrer (idle) ou redémarrer (gameover) */}
-          {phase === "idle" && (
-            <button className="sg-start-btn" onClick={startGame}>
-              DÉMARRER
+        )}
+
+        {/* Bouton démarrer / redémarrer */}
+        {phase === "idle" && (
+          <button className="sg-start-btn" onClick={startGame}>
+            DÉMARRER
+          </button>
+        )}
+        {phase === "gameover" && (
+          <div className="sg-gameover-area">
+            <p className="sg-gameover-score">
+              Score final : <strong>{score}</strong>
+            </p>
+            <button className="sg-start-btn sg-start-btn--restart" onClick={startGame}>
+              ↺ RECOMMENCER
             </button>
-          )}
-          {phase === "gameover" && (
-            <div className="sg-gameover-area">
-              <p className="sg-gameover-score">
-                Score final : <strong>{score}</strong>
-              </p>
-              <button className="sg-start-btn sg-start-btn--restart" onClick={startGame}>
-                ↺ RECOMMENCER
-              </button>
-            </div>
-          )}
+          </div>
+        )}
 
-          {/* 🏆 LEADERBOARD (toujours en dessous) */}
-          <div className="sg-leaderboard-container">
-            <h2>🏆 Top 5</h2>
-
-            <table className="sg-leaderboard">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Joueur</th>
-                  <th>Score</th>
+        {/* 🏆 LEADERBOARD */}
+        <div className="sg-leaderboard-container">
+          <h2>🏆 Top 5</h2>
+          <table className="sg-leaderboard">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Joueur</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboard.map((entry, i) => (
+                <tr key={entry.id_score}>
+                  <td>#{i + 1}</td>
+                  <td>
+                    {entry.utilisateur?.prenom_user} {entry.utilisateur?.nom_user}
+                  </td>
+                  <td>{entry.score}</td>
                 </tr>
-              </thead>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </main>
 
-              <tbody>
-                {leaderboard.map((entry, i) => (
-                  <tr key={entry.id_score}>
-                    <td>#{i + 1}</td>
+      {/* ── Right panel: MQTT ── */}
+      <aside className="sg-panel sg-panel--right">
+        <h2 className="sg-panel-title">PI PICO</h2>
+        <div className={`sg-serial-badge sg-serial-badge--${mqttStatus}`}>
+          {mqttStatus === "connected" ? "● CONNECTÉ"  :
+           mqttStatus === "error"     ? "● ERREUR"    :
+                                        "○ DÉCONNECTÉ"}
+        </div>
 
-                    <td>
-                      {entry.utilisateur?.prenom_user} {entry.utilisateur?.nom_user}
-                    </td>
+        <p className="sg-serial-hint">
+          Broker : <code>10.214.81.52</code><br />
+          Utilisez les boutons du Pico ou les tuiles ci-dessus.
+        </p>
 
-                    <td>{entry.score}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </main>
- 
-        {/* ── Right panel: Pico ── */}
-        <aside className="sg-panel sg-panel--right">
-          <h2 className="sg-panel-title">PI PICO</h2>
-          <div className={`sg-serial-badge sg-serial-badge--${serialStatus}`}>
-            {serialStatus === "connected" ? "● CONNECTÉ" : "○ DÉCONNECTÉ"}
-          </div>
- 
-          {serialStatus === "disconnected" ? (
-            <button className="sg-serial-btn" onClick={connectSerial}>
-              Connecter USB
-            </button>
-          ) : (
-            <button className="sg-serial-btn sg-serial-btn--disc" onClick={disconnectSerial}>
-              Déconnecter
-            </button>
+        <div className="sg-log">
+          {mqttLog.map((l, i) => (
+            <div key={i} className="sg-log-line">{l}</div>
+          ))}
+          {mqttLog.length === 0 && (
+            <div className="sg-log-line sg-log-line--empty">— console MQTT —</div>
           )}
- 
-          <p className="sg-serial-hint">
-            Utilisez les boutons du Pico ou les tuiles de gauche.
-          </p>
- 
-          <div className="sg-log">
-            {serialLog.map((l, i) => (
-              <div key={i} className="sg-log-line">{l}</div>
-            ))}
-            {serialLog.length === 0 && (
-              <div className="sg-log-line sg-log-line--empty">— console —</div>
-            )}
-          </div>
-        </aside>
- 
-      </div>
-    </>
+        </div>
+      </aside>
+
+    </div>
   );
-}
- 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
- 
-function setColor(data: any): any {
-  throw new Error("Function not implemented.");
 }
 
