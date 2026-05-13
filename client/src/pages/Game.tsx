@@ -1,9 +1,9 @@
 import "../utils/Game.css";
-
+ 
 import { useState, useEffect, useRef, useCallback } from "react";
-
+ 
 import mqtt from "mqtt";
-
+ 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 type Color = 'yellow' | 'green' | 'red' | 'blue';
 const COLORS: Color[] = ["yellow", "green", "red", "blue"];
@@ -13,17 +13,17 @@ const COLOR_META: Record<Color, { hex: string; glow: string; label: string }> = 
   red:    { hex: "#FF2D55", glow: "#FF2D5588", label: "R" },
   blue:   { hex: "#00BFFF", glow: "#00BFFF88", label: "B" },
 };
-
+ 
 const BROKER_URL  = "ws://10.214.81.52:9001";   // WebSocket Mosquitto
 const TOPIC_PRESS = "pico/groupe3/simon/press";  // Pico → Site
 const TOPIC_CMD   = "pico/groupe3/simon/cmd";    // Site → Pico
-
+ 
 const FLASH_DURATION = 500; // ms each color lit
 const FLASH_PAUSE    = 200; // ms between flashes
-
+ 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const delay = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
-
+ 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function SimonGame() {
   const [masterSeq,   setMasterSeq]   = useState<Color[]>([]);
@@ -38,18 +38,20 @@ export default function SimonGame() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [mqttStatus,  setMqttStatus]  = useState<string>("disconnected");
   const [mqttLog,     setMqttLog]     = useState<string[]>([]);
-
+ 
   const clientRef      = useRef<any>(null);
   const phaseRef       = useRef<string>(phase);
   const playerInputRef = useRef<Color[]>(playerInput);
   const masterSeqRef   = useRef<Color[]>(masterSeq);
   const scoreRef       = useRef<number>(score);
-
+  const currentUserRef = useRef<any>(null);
+ 
   useEffect(() => { phaseRef.current       = phase;       }, [phase]);
   useEffect(() => { playerInputRef.current = playerInput; }, [playerInput]);
   useEffect(() => { masterSeqRef.current   = masterSeq;   }, [masterSeq]);
   useEffect(() => { scoreRef.current       = score;       }, [score]);
-
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+ 
   useEffect(() => {
     fetch("http://localhost:3000/auth/me", { credentials: "include" })
       .then(res => res.json())
@@ -59,7 +61,7 @@ export default function SimonGame() {
       })
       .catch(err => console.error("Auth error:", err));
   }, []);
-
+ 
   // ── Fetch leaderboard ──────────────────────────────────────────────────────
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -67,36 +69,36 @@ export default function SimonGame() {
       if (res.ok) setLeaderboard(await res.json());
     } catch (_) {}
   }, []);
-
+ 
   useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
-
+ 
   // ── Connexion MQTT ─────────────────────────────────────────────────────────
   useEffect(() => {
     const c = mqtt.connect(BROKER_URL);
     clientRef.current = c;
-
+ 
     c.on("connect", () => {
       setMqttStatus("connected");
       logMqtt("Broker MQTT connecté ✓");
       c.subscribe(TOPIC_PRESS);
     });
-
+ 
     c.on("error", (err: any) => {
       setMqttStatus("error");
       logMqtt(`Erreur: ${err.message}`);
     });
-
+ 
     c.on("close", () => {
       setMqttStatus("disconnected");
       logMqtt("Déconnecté du broker");
     });
-
+ 
     c.on("message", (topic: string, msg: Buffer) => {
       const text = msg.toString().trim();
       logMqtt(`← ${text}`);
-
+ 
       if (topic === TOPIC_PRESS && text.startsWith("PRESS:")) {
         const color = text.split(":")[1]?.toLowerCase();
         if (color && COLORS.includes(color as Color)) {
@@ -106,59 +108,59 @@ export default function SimonGame() {
         }
       }
     });
-
+ 
     return () => { c.end(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
+ 
   // ── Publish vers le Pico ───────────────────────────────────────────────────
   const publish = useCallback((msg: string) => {
     if (!clientRef.current) return;
     clientRef.current.publish(TOPIC_CMD, msg);
     logMqtt(`→ ${msg}`);
   }, []);
-
+ 
   const logMqtt = (msg: string) => {
     setMqttLog(l => [...l.slice(-19), msg]);
   };
-
+ 
   // ── Save score to backend ──────────────────────────────────────────────────
   const saveScore = useCallback(async (finalScore: number) => {
     if (finalScore === 0) return;
-    if (!currentUser?.id_user) return;
-
+    if (!currentUserRef.current?.id_user) return;
+ 
     try {
       const res = await fetch("http://localhost:3000/scores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          id_user: currentUser.id_user,
+          id_user: currentUserRef.current.id_user,
           score: finalScore,
         }),
       });
-
+ 
       if (!res.ok) {
         const err = await res.text();
         console.error("Backend error:", err);
         return;
       }
-
+ 
       fetchLeaderboard();
     } catch (err) {
       console.error("Erreur saveScore:", err);
     }
-  }, [fetchLeaderboard, currentUser?.id_user]);
-
+  }, [fetchLeaderboard]);
+ 
   // ── Ajoute une couleur aléatoire à la séquence maître ─────────────────────
   const appendColor = (): Color => COLORS[Math.floor(Math.random() * COLORS.length)];
-
+ 
   // ── Flash la séquence visible ──────────────────────────────────────────────
   const showSequence = useCallback(async (seq: Color[]) => {
     setPhase("showing");
     setLitColor(null);
     await delay(600);
-
+ 
     for (const color of seq) {
       setLitColor(color);
       publish(`SHOW:${color}`);
@@ -167,12 +169,12 @@ export default function SimonGame() {
       publish("OFF");
       await delay(FLASH_PAUSE);
     }
-
+ 
     await delay(300);
     setPhase("waiting");
     setPlayerInput([]);
   }, [publish]);
-
+ 
   // ── Démarre une nouvelle manche ────────────────────────────────────────────
   const nextRound = useCallback(async (prevMaster: Color[]) => {
     const newColor = appendColor();
@@ -181,7 +183,7 @@ export default function SimonGame() {
     setRound(newSeq.length);
     await showSequence(newSeq);
   }, [showSequence]);
-
+ 
   // ── Démarre le jeu ─────────────────────────────────────────────────────────
   const startGame = useCallback(async () => {
     setScore(0);
@@ -196,15 +198,15 @@ export default function SimonGame() {
     await delay(400);
     await showSequence(firstSeq);
   }, [showSequence]);
-
+ 
   // ── Gestion d'une pression couleur ────────────────────────────────────────
   const handleColorPress = useCallback((color: Color) => {
     const newInput = [...playerInputRef.current, color];
     setPlayerInput(newInput);
-
+ 
     const seq = masterSeqRef.current;
     const idx = newInput.length - 1;
-
+ 
     // ❌ Mauvaise couleur → game over
     if (newInput[idx] !== seq[idx]) {
       setPhase("gameover");
@@ -214,7 +216,7 @@ export default function SimonGame() {
       setTimeout(() => setLitColor(null), 800);
       return;
     }
-
+ 
     // ✅ Toute la séquence saisie correctement
     if (newInput.length === seq.length) {
       const newScore = seq.length;
@@ -227,29 +229,29 @@ export default function SimonGame() {
       }, 900);
     }
   }, [saveScore, nextRound]);
-
+ 
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:3000/auth/logout", {
         method: "POST",
         credentials: "include",
       });
-
+ 
       localStorage.removeItem("user");
       window.location.href = "/";
     } catch (error) {
       console.error("Erreur logout :", error);
     }
   };
-
+ 
   // ─── RENDER ───────────────────────────────────────────────────────────────
   return (
     <div className="sg-root">
-
+ 
       {/* ── Left panel: Leaderboard ── */}
       <aside className="sg-panel sg-panel--left">
       </aside>
-
+ 
       {/* ── Center: Game ── */}
       <main className="sg-center">
         <header className="sg-header">
@@ -260,7 +262,7 @@ export default function SimonGame() {
             Déconnexion
           </button>
         </header>
-
+ 
         {/* Score & Round */}
         <div className="sg-stats">
           <div className="sg-stat">
@@ -276,7 +278,7 @@ export default function SimonGame() {
             <span className="sg-stat-val sg-stat-val--name">{playerName || "—"}</span>
           </div>
         </div>
-
+ 
         {/* Result message */}
         {resultMsg && (
           <div className="sg-result-msg sg-result-msg--ok">
@@ -286,7 +288,7 @@ export default function SimonGame() {
         {phase === "gameover" && !resultMsg && (
           <div className="sg-result-msg sg-result-msg--err">✗ GAME OVER</div>
         )}
-
+ 
         <div className="sg-grid">
           {COLORS.map(color => {
             const meta    = COLOR_META[color];
@@ -307,7 +309,7 @@ export default function SimonGame() {
             );
           })}
         </div>
-
+ 
         {/* Phase indicator */}
         <div className="sg-phase-row">
           {phase === "showing" && (
@@ -320,7 +322,7 @@ export default function SimonGame() {
             <span className="sg-phase sg-phase--idle">Prêt ?</span>
           )}
         </div>
-
+ 
         {/* Progress dots */}
         {phase === "waiting" && (
           <div className="sg-progress">
@@ -336,7 +338,7 @@ export default function SimonGame() {
             })}
           </div>
         )}
-
+ 
         {/* Bouton démarrer / redémarrer */}
         {phase === "idle" && (
           <button className="sg-start-btn" onClick={startGame}>
@@ -353,7 +355,7 @@ export default function SimonGame() {
             </button>
           </div>
         )}
-
+ 
         {/* 🏆 LEADERBOARD */}
         <div className="sg-leaderboard-container">
           <h2>🏆 Top 5</h2>
@@ -379,7 +381,7 @@ export default function SimonGame() {
           </table>
         </div>
       </main>
-
+ 
       {/* ── Right panel: MQTT ── */}
       <aside className="sg-panel sg-panel--right">
         <h2 className="sg-panel-title">PI PICO</h2>
@@ -388,12 +390,12 @@ export default function SimonGame() {
            mqttStatus === "error"     ? "● ERREUR"    :
                                         "○ DÉCONNECTÉ"}
         </div>
-
+ 
         <p className="sg-serial-hint">
           Broker : <code>10.214.81.52</code><br />
           Utilisez les boutons du Pico ou les tuiles ci-dessus.
         </p>
-
+ 
         <div className="sg-log">
           {mqttLog.map((l, i) => (
             <div key={i} className="sg-log-line">{l}</div>
@@ -403,8 +405,7 @@ export default function SimonGame() {
           )}
         </div>
       </aside>
-
+ 
     </div>
   );
 }
-

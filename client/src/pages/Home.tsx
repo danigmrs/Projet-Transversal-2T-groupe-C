@@ -72,7 +72,7 @@ export default function Connexion() {
   //html page
   return (
     <div className="connexion-container">
-      <h1>Quiz Culture Générale</h1>
+      <h1>Simon groupe C</h1>
 
 
       <input
