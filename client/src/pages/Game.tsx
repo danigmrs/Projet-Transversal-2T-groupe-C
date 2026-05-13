@@ -53,7 +53,7 @@ export default function SimonGame() {
   useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
  
   useEffect(() => {
-    fetch("http://localhost:3000/auth/me", { credentials: "include" })
+    fetch("http://192.168.20.22:3000/auth/me", { credentials: "include" })
       .then(res => res.json())
       .then((user) => {
         setCurrentUser(user);
@@ -65,7 +65,7 @@ export default function SimonGame() {
   // ── Fetch leaderboard ──────────────────────────────────────────────────────
   const fetchLeaderboard = useCallback(async () => {
     try {
-      const res = await fetch("http://localhost:3000/scores/top5");
+      const res = await fetch("http://192.168.20.22:3000/scores/top5");
       if (res.ok) setLeaderboard(await res.json());
     } catch (_) {}
   }, []);
@@ -130,7 +130,7 @@ export default function SimonGame() {
     if (!currentUserRef.current?.id_user) return;
  
     try {
-      const res = await fetch("http://localhost:3000/scores", {
+      const res = await fetch("http://192.168.20.22:3000/scores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -232,7 +232,7 @@ export default function SimonGame() {
  
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:3000/auth/logout", {
+      await fetch("http://192.168.20.22:3000/auth/logout", {
         method: "POST",
         credentials: "include",
       });

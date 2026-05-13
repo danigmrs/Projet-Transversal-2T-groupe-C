@@ -29,7 +29,7 @@ export default function Inscription() {
       return;
     }
 
-    const response = await fetch("http://localhost:3000/users", {
+    const response = await fetch("http://192.168.20.22:3000/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
